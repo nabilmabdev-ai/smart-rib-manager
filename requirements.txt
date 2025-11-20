@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+sqlmodel
+bcrypt
+python-multipart
+jinja2
+pandas
+openpyxl
+pypdf
+pdf2image
+google-cloud-vision
+google-generativeai
+requests
+python-dotenv

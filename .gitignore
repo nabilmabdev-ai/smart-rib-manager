@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.env
+
+# Database (SQLite) - Important: Render wipes the disk on restart, so we won't rely on this file in prod, but we shouldn't commit the local one.
+*.db
+*.sqlite
+
+# Google Credentials (NEVER commit this)
+google-credentials.json
+
+# Uploads folder
+app/static/uploads/*
+!app/static/uploads/.gitkeep

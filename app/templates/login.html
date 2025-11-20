@@ -1,0 +1,159 @@
+<!-- app/templates/login.html -->
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion - Smart RIB Manager</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter for a Pro Look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Subtle Animation for the form */
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        @keyframes fadeInUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="h-full flex">
+
+    <!-- LEFT SIDE: Branding & Visual (Hidden on Mobile) -->
+    <div class="hidden lg:flex w-1/2 bg-slate-900 relative overflow-hidden items-center justify-center">
+        
+        <!-- Abstract Background Pattern -->
+        <div class="absolute inset-0 opacity-20">
+            <svg class="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <path d="M0 100 C 20 0 50 0 100 100 Z" fill="#4f46e5" />
+                <path d="M0 0 C 50 100 80 100 100 0 Z" fill="#818cf8" />
+            </svg>
+            <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-900 mix-blend-multiply"></div>
+        </div>
+
+        <!-- Content -->
+        <div class="relative z-10 max-w-md text-center px-8">
+            <div class="mb-6 flex justify-center">
+                <div class="h-20 w-20 bg-indigo-500/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-indigo-500/30">
+                    <svg class="w-10 h-10 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+            </div>
+            <h2 class="text-3xl font-bold text-white tracking-tight">Extraction Bancaire Intelligente</h2>
+            <p class="mt-4 text-slate-400 text-lg leading-relaxed">
+                Automatisez la saisie de vos RIBs, détectez les anomalies et exportez vos données en toute sécurité.
+            </p>
+        </div>
+    </div>
+
+    <!-- RIGHT SIDE: Login Form -->
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
+        <div class="max-w-md w-full space-y-8 fade-in-up">
+            
+            <!-- Mobile Logo (Visible only on small screens) -->
+            <div class="lg:hidden flex justify-center mb-8">
+                <div class="h-12 w-12 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Header -->
+            <div class="text-center lg:text-left">
+                <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Bienvenue</h2>
+                <p class="mt-2 text-sm text-slate-500">
+                    Connectez-vous à <span class="font-semibold text-indigo-600">Smart RIB Manager</span>
+                </p>
+            </div>
+
+            <!-- Error Alert -->
+            {% if error %}
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-md flex items-start gap-3 animate-pulse">
+                <svg class="w-5 h-5 text-red-500 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div>
+                    <p class="text-sm font-bold text-red-700">Erreur de connexion</p>
+                    <p class="text-sm text-red-600">{{ error }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Form -->
+            <form class="mt-8 space-y-6" action="/login" method="POST">
+                
+                <div class="space-y-5">
+                    <!-- Username Field -->
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-slate-700 mb-1">Identifiant</label>
+                        <div class="relative rounded-md shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                            <input id="username" name="username" type="text" required 
+                                   class="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all" 
+                                   placeholder="ex: admin">
+                        </div>
+                    </div>
+
+                    <!-- Password Field -->
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-slate-700 mb-1">Mot de passe</label>
+                        <div class="relative rounded-md shadow-sm">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </div>
+                            <input id="password" name="password" type="password" required 
+                                   class="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-all" 
+                                   placeholder="••••••••">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-slate-300 rounded">
+                        <label for="remember-me" class="ml-2 block text-sm text-slate-900">Se souvenir de moi</label>
+                    </div>
+                    <div class="text-sm">
+                        <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500 hover:underline">Mot de passe oublié ?</a>
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transform hover:-translate-y-0.5">
+                        <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                            <svg class="h-5 w-5 text-indigo-400 group-hover:text-indigo-300 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                            </svg>
+                        </span>
+                        Se connecter
+                    </button>
+                </div>
+            </form>
+
+            <!-- Footer -->
+            <p class="text-center text-xs text-slate-400 mt-8">
+                &copy; 2025 Smart RIB Manager. Tous droits réservés.
+            </p>
+        </div>
+    </div>
+
+</body>
+</html>

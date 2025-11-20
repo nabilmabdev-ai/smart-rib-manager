@@ -1,0 +1,50 @@
+<!-- app/templates/partials/upload_result.html -->
+
+<!-- 1. The Row(s) to append -->
+{% for rib in results %}
+    {% include "partials/rib_row.html" %}
+{% endfor %}
+
+<!-- 2. The Stats to swap (Out of Band) -->
+<div id="stats-container" hx-swap-oob="true">
+    {% if stats and stats.total_files > 0 %}
+    <div class="bg-slate-50/80 border-b border-slate-200 animate-in fade-in duration-500">
+        <!-- Metric Counters -->
+        <div class="grid grid-cols-3 gap-px bg-slate-200 border-b border-slate-200">
+            <div class="bg-white p-4 flex flex-col items-center justify-center text-center group">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Fichiers</span>
+                <span class="text-2xl font-bold text-slate-800">{{ stats.total_files }}</span>
+            </div>
+            
+            <div class="bg-white p-4 flex flex-col items-center justify-center text-center">
+                <span class="text-xs font-bold text-emerald-600/70 uppercase tracking-wider mb-1">RIBs Traités</span>
+                <span class="text-2xl font-bold text-emerald-600">{{ stats.valid_ribs }}</span>
+            </div>
+
+            <div class="bg-white p-4 flex flex-col items-center justify-center text-center">
+                <span class="text-xs font-bold {% if stats.discrepancies > 0 %}text-red-500/70{% else %}text-slate-400{% endif %} uppercase tracking-wider mb-1">Anomalies</span>
+                <span class="text-2xl font-bold {% if stats.discrepancies > 0 %}text-red-600{% else %}text-slate-300{% endif %}">
+                    {{ stats.discrepancies }}
+                </span>
+                {% if stats.discrepancies > 0 %}
+                <span class="text-[10px] text-red-500 font-medium mt-1 bg-red-50 px-2 py-0.5 rounded-full">À vérifier</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Bank Distribution -->
+        {% if stats.bank_distribution %}
+        <div class="px-6 py-3 flex items-center gap-4 overflow-x-auto no-scrollbar bg-indigo-50/30">
+            <span class="text-xs font-bold text-indigo-900/50 uppercase tracking-wider whitespace-nowrap">Banques :</span>
+            {% for bank, count in stats.bank_distribution.items() %}
+            <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-indigo-100 shadow-sm whitespace-nowrap">
+                <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
+                <span class="text-xs font-bold text-slate-700">{{ bank }}</span>
+                <span class="text-xs font-mono bg-slate-100 text-slate-600 px-1.5 rounded-md font-bold">{{ count }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
