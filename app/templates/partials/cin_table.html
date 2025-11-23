@@ -1,0 +1,86 @@
+<!-- app/templates/partials/cin_table.html -->
+<!-- Added pb-4 to the main div for spacing at the bottom -->
+<div id="cin-table-container" class="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col pb-4">
+    
+    <!-- 1. CIN STATISTICS -->
+    <div id="cin-stats-container">
+        <div class="grid grid-cols-3 gap-px bg-slate-200 border-b border-slate-200">
+            <!-- Total Files -->
+            <div class="bg-white p-4 flex flex-col items-center justify-center text-center">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total CIN</span>
+                <span class="text-2xl font-bold text-slate-800">{{ period.cins|length }}</span>
+            </div>
+            
+            <!-- Valid Count -->
+            {% set valid_cins = period.cins | selectattr("status", "equalto", "VALID") | list | length %}
+            <div class="bg-white p-4 flex flex-col items-center justify-center text-center">
+                <span class="text-xs font-bold text-emerald-600/70 uppercase tracking-wider mb-1">Validées</span>
+                <span class="text-2xl font-bold text-emerald-600">{{ valid_cins }}</span>
+            </div>
+
+            <!-- Anomalies Count -->
+            {% set error_cins = period.cins | selectattr("status", "in", ["EXPIRED", "ERROR", "SUSPICIOUS"]) | list | length %}
+            <div class="bg-white p-4 flex flex-col items-center justify-center text-center">
+                <span class="text-xs font-bold {% if error_cins > 0 %}text-red-500/70{% else %}text-slate-400{% endif %} uppercase tracking-wider mb-1">Attention</span>
+                <span class="text-2xl font-bold {% if error_cins > 0 %}text-red-600{% else %}text-slate-300{% endif %}">
+                    {{ error_cins }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-white">
+        <div>
+            <h3 class="font-bold text-slate-800 text-lg">Cartes d'Identité</h3>
+            <p class="text-sm text-slate-500 mt-0.5">Données extraites (Recto/Verso)</p>
+        </div>
+        
+        {% if period.cins %}
+        <div class="flex items-center gap-3">
+            <a href="/period/{{ period.id }}/export_cin" 
+               class="px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-100 text-sm font-bold rounded-lg hover:bg-emerald-100 flex items-center gap-2 transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                Excel
+            </a>
+             <button hx-delete="/period/{{ period.id }}/cins/all"
+                    hx-target="#cin-table-container" 
+                    hx-swap="outerHTML"
+                    hx-confirm="⚠️ ATTENTION : Supprimer toutes les CIN ?"
+                    class="px-4 py-2 bg-red-50 text-red-600 border border-red-100 text-sm font-bold rounded-lg hover:bg-red-100">
+                Tout supprimer
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto flex-1">
+        <table class="w-full text-left text-sm text-slate-600">
+            <thead class="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                <tr>
+                    <th class="px-6 py-4 w-28">État</th>
+                    <th class="px-6 py-4">N° CIN</th>
+                    <th class="px-6 py-4">Nom Prénom</th>
+                    <th class="px-6 py-4">Adresse</th>
+                    <th class="px-6 py-4">Validité</th>
+                    <th class="px-6 py-4 w-32 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="cin-table-body" class="divide-y divide-slate-100">
+                {% for cin in period.cins %}
+                    {% include "partials/cin_row.html" %}
+                {% else %}
+                <tr id="cin-empty-state">
+                    <td colspan="6" class="px-6 py-16 text-center">
+                        <div class="flex flex-col items-center justify-center">
+                            <div class="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3 text-2xl">🪪</div>
+                            <p class="text-slate-900 font-medium">Aucune CIN importée</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

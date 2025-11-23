@@ -1,0 +1,66 @@
+<!-- app/templates/partials/modal_profile.html -->
+<div class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity"
+     id="profile-modal">
+    
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+        
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+            <div>
+                <h2 class="text-lg font-bold text-slate-900">Mon Profil</h2>
+                <p class="text-xs text-slate-500">Modifier vos informations.</p>
+            </div>
+            <button onclick="document.getElementById('profile-modal').remove()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6">
+            <!-- User Info -->
+            <div class="mb-6 flex items-center gap-4 bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xl font-bold">
+                    {{ user.username[0].upper() }}
+                </div>
+                <div>
+                    <p class="font-bold text-slate-900 text-lg">{{ user.username }}</p>
+                    <span class="text-xs font-bold uppercase tracking-wider bg-white px-2 py-0.5 rounded text-indigo-600 border border-indigo-100">
+                        {{ user.role }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Feedback Messages -->
+            {% if error %}
+            <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                {{ error }}
+            </div>
+            {% endif %}
+            {% if success %}
+            <div class="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm rounded-lg flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                {{ success }}
+            </div>
+            {% endif %}
+
+            <form hx-post="/profile/password" hx-target="#profile-modal" hx-swap="outerHTML" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Ancien mot de passe</label>
+                    <input type="password" name="old_password" required
+                           class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Nouveau mot de passe</label>
+                    <input type="password" name="new_password" required minlength="6"
+                           class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg shadow-md transition-colors text-sm">
+                    Mettre à jour le mot de passe
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

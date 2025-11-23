@@ -1,200 +1,240 @@
+<!-- app/templates/period_detail.html -->
 {% extends "base.html" %}
 
 {% block content %}
-<main class="min-h-screen bg-slate-50 py-8 px-4 sm:px-8">
-    <!-- ... Header ... -->
+<!-- Main Container with proper padding (pt-8 top, pb-24 bottom) -->
+<main class="min-h-screen bg-slate-50 pt-8 pb-24 px-4 sm:px-8">
     <div class="max-w-7xl mx-auto">
-        <!-- Header Area -->
-        <div class="flex justify-between items-center mb-8">
+        
+        <!-- 1. HEADER AREA -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
                 <a href="/" class="text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors mb-2 inline-block">
                     &larr; Retour aux dossiers
                 </a>
-                <h1 class="text-3xl font-bold text-slate-900 tracking-tight">{{ period.name }}</h1>
+                <div class="flex items-center gap-3">
+                    <h1 class="text-3xl font-bold text-slate-900 tracking-tight">{{ period.name }}</h1>
+                    
+                    <!-- Locked Badge -->
+                    {% if period.is_locked %}
+                    <span class="bg-slate-100 text-slate-500 text-xs font-bold px-2 py-1 rounded-full border border-slate-200 uppercase tracking-wider">
+                        Clôturé
+                    </span>
+                    {% else %}
+                    <span class="bg-green-50 text-green-700 text-xs font-bold px-2 py-1 rounded-full border border-green-200 uppercase tracking-wider">
+                        Ouvert
+                    </span>
+                    {% endif %}
+                </div>
             </div>
             
             <!-- Admin Controls -->
             {% if user.role in ['admin', 'superadmin'] %}
-            <div class="flex gap-2">
-                <form hx-post="/period/{{ period.id }}/toggle_lock" hx-target="main" hx-swap="innerHTML">
-                    {% if period.is_locked %}
-                        <button type="submit" class="flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-amber-200 transition-all">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0v4m-5 9V14a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H9a1 1 0 01-1-1z" /></svg>
-                            Réouvrir le dossier
-                        </button>
-                    {% else %}
-                        <button type="submit" class="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-slate-700 transition-all">
-                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                            Clôturer (Lecture Seule)
-                        </button>
-                    {% endif %}
-                </form>
-            </div>
+            <form hx-post="/period/{{ period.id }}/toggle_lock" hx-target="body" hx-swap="outerHTML">
+                {% if period.is_locked %}
+                    <button type="submit" class="flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-amber-200 transition-all text-sm">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0v4m-5 9V14a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H9a1 1 0 01-1-1z" /></svg>
+                        Réouvrir le dossier
+                    </button>
+                {% else %}
+                    <button type="submit" class="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg font-bold shadow-sm hover:bg-slate-700 transition-all text-sm">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                        Clôturer (Lecture Seule)
+                    </button>
+                {% endif %}
+            </form>
             {% endif %}
         </div>
         
+        <!-- 2. TABS NAVIGATION -->
+        <div class="mb-6 border-b border-slate-200">
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <button onclick="switchTab('rib')" id="tab-btn-rib"
+                    class="border-indigo-500 text-indigo-600 group inline-flex items-center py-4 px-1 border-b-2 font-bold text-sm transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                    <span>Relevés Bancaires (RIB)</span>
+                    <span class="ml-2 bg-indigo-100 text-indigo-600 py-0.5 px-2 rounded-full text-xs hidden md:inline-block">{{ period.ribs|length }}</span>
+                </button>
+
+                <button onclick="switchTab('cin')" id="tab-btn-cin"
+                    class="border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 group inline-flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                    <svg class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0c0 .883-.393 1.627-1.014 2.128a4.97 4.97 0 01-6.972 0"></path></svg>
+                    <span>Cartes d'Identité (CIN)</span>
+                    <span class="ml-2 bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full text-xs hidden md:inline-block">{{ period.cins|length }}</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- MAIN GRID -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             <!-- LEFT: Upload Zone -->
             <div class="lg:col-span-4 xl:col-span-3">
                 {% if period.is_locked %}
-                    <div class="bg-slate-100 border-2 border-slate-200 border-dashed rounded-xl p-8 text-center h-full flex flex-col justify-center">
-                        <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 mx-auto shadow-sm">
-                            <svg class="w-8 h-8 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                    <div class="bg-slate-100 border-2 border-slate-200 border-dashed rounded-xl p-8 text-center h-64 flex flex-col justify-center">
+                        <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-4 mx-auto shadow-sm">
+                            <svg class="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
                         </div>
-                        <h3 class="text-slate-600 font-bold text-lg">Dossier Clôturé</h3>
-                        <p class="text-sm text-slate-500 mt-1">Les modifications sont désactivées.</p>
+                        <h3 class="text-slate-600 font-bold">Dossier Clôturé</h3>
+                        <p class="text-xs text-slate-400 mt-1">Mode lecture seule</p>
                     </div>
                 {% elif user.role == 'admin' %}
-                    <div class="bg-indigo-50/50 border-2 border-indigo-100 border-dashed rounded-xl p-8 text-center h-full flex flex-col justify-center">
-                         <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 mx-auto shadow-sm">
-                            <svg class="w-8 h-8 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    <div class="bg-indigo-50/50 border-2 border-indigo-100 border-dashed rounded-xl p-8 text-center h-64 flex flex-col justify-center">
+                         <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-4 mx-auto shadow-sm">
+                            <svg class="w-6 h-6 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                         </div>
-                        <h3 class="text-indigo-500 font-bold text-lg">Mode Admin</h3>
-                        <p class="text-sm text-indigo-400 mt-1">Connectez-vous en tant qu'opérateur pour importer.</p>
+                        <h3 class="text-indigo-500 font-bold">Mode Admin</h3>
+                        <p class="text-xs text-indigo-400 mt-1">Connectez-vous en tant qu'opérateur pour importer.</p>
                     </div>
                 {% else %}
-                    <!-- SHOW THE UPLOAD FORM (Existing Code) -->
+                    <!-- DYNAMIC UPLOAD CARD -->
                     <form id="upload-form" class="h-full">
-                    
-                    <!-- CARD CONTAINER -->
-                    <div id="upload-card" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 h-auto min-h-[320px] flex flex-col justify-between relative overflow-hidden group transition-all duration-300">
-                        
-                        <!-- STATE 1: IDLE -->
-                        <div id="upload-idle" class="flex flex-col h-full transition-opacity duration-300">
-                            <div>
-                                <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4 shadow-sm">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                </div>
-                                <h3 class="font-bold text-slate-900 text-lg mb-1">Importer des fichiers</h3>
-                                <p class="text-sm text-slate-500 leading-relaxed">
-                                    Ajoutez vos relevés bancaires (PDF ou Images).
-                                </p>
-                            </div>
-
-                            <!-- Drop Area -->
-                            <div class="mt-8 flex-grow relative border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 hover:bg-indigo-50/30 hover:border-indigo-300 transition-all cursor-pointer flex flex-col items-center justify-center text-center p-4">
-                                <!-- Changed onchange to call our custom JS function -->
-                                <input type="file" name="files" id="file-input" multiple accept=".pdf,image/*"
-                                       class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
-                                       onchange="handleBatchUpload(this)">
-                                
-                                <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full mb-2">
-                                    Cliquer ou Glisser
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- STATE 2: LOADING -->
-                        <div id="upload-loading" class="absolute inset-0 bg-white z-30 flex flex-col items-center justify-center p-6 opacity-0 pointer-events-none transition-all duration-500 transform scale-95">
-                            <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 animate-bounce">
-                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                            </div>
+                        <div id="upload-card" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 h-auto min-h-[320px] flex flex-col justify-between relative overflow-hidden group transition-all duration-300 hover:border-indigo-300 hover:shadow-md">
                             
-                            <h3 class="font-bold text-slate-900 text-xl mb-2">Analyse en cours...</h3>
-                            <p class="text-slate-500 font-medium mb-1" id="file-counter-text">Préparation...</p>
-                            <p class="text-xs text-slate-400 truncate max-w-[200px]" id="current-filename">...</p>
+                            <!-- STATE 1: IDLE -->
+                            <div id="upload-idle" class="flex flex-col h-full transition-opacity duration-300">
+                                <div>
+                                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4 shadow-sm transition-colors" id="upload-icon">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                    </div>
+                                    <h3 class="font-bold text-slate-900 text-lg mb-1" id="upload-title">Importer des RIBs</h3>
+                                    <p class="text-sm text-slate-500 leading-relaxed" id="upload-desc">
+                                        Glissez vos relevés bancaires (PDF/IMG).
+                                    </p>
+                                </div>
 
-                            <div class="w-full bg-slate-100 rounded-full h-3 mt-8 overflow-hidden relative">
-                                <div id="progress-bar-fill" class="absolute top-0 left-0 h-full bg-indigo-600 rounded-full w-0 transition-all duration-300"></div>
+                                <div class="mt-8 flex-grow relative border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 hover:bg-indigo-50/30 hover:border-indigo-300 transition-all cursor-pointer flex flex-col items-center justify-center text-center p-4 group-hover:border-indigo-400">
+                                    <input type="file" name="files" id="file-input" multiple accept=".pdf,image/*"
+                                           class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+                                           onchange="handleBatchUpload(this)">
+                                    <span class="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full mb-2 shadow-sm">Parcourir</span>
+                                    <span class="text-[10px] text-slate-400">Max 50 fichiers</span>
+                                </div>
+                            </div>
+
+                            <!-- STATE 2: LOADING -->
+                            <div id="upload-loading" class="absolute inset-0 bg-white z-30 flex flex-col items-center justify-center p-6 opacity-0 pointer-events-none transition-all duration-500 transform scale-95">
+                                <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 animate-bounce">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                </div>
+                                <h3 class="font-bold text-slate-900 text-xl mb-2">Analyse IA...</h3>
+                                <p class="text-slate-500 font-medium mb-1" id="file-counter-text">Initialisation...</p>
+                                <p class="text-xs text-slate-400 truncate max-w-[200px]" id="current-filename">...</p>
+                                <div class="w-full bg-slate-100 rounded-full h-2 mt-8 overflow-hidden relative">
+                                    <div id="progress-bar-fill" class="absolute top-0 left-0 h-full bg-indigo-600 rounded-full w-0 transition-all duration-300 shadow-[0_0_10px_rgba(79,70,229,0.5)]"></div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </form>
+                    </form>
                 {% endif %}
             </div>
 
-            <!-- RIGHT: Table -->
-            <div class="lg:col-span-8 xl:col-span-9 h-full" id="table-container">
-                {% include "partials/rib_table.html" %}
+            <!-- RIGHT: Tab Views (FIXED: Removed h-full) -->
+            <div class="lg:col-span-8 xl:col-span-9">
+                
+                <!-- RIB VIEW -->
+                <div id="rib-view" class="block animate-in fade-in duration-300">
+                    {% include "partials/rib_table.html" %}
+                </div>
+
+                <!-- CIN VIEW -->
+                <div id="cin-view" class="hidden animate-in fade-in duration-300">
+                    {% include "partials/cin_table.html" %}
+                </div>
+
             </div>
         </div>
     </div>
 </main>
 
 <script>
-async function handleBatchUpload(input) {
-    const files = Array.from(input.files);
-    if (files.length === 0) return;
-    
-    const periodId = "{{ period.id }}"; // From Jinja context
-    const url = `/period/${periodId}/upload`;
-    
-    // 1. Switch UI to Loading
-    document.getElementById('upload-idle').style.opacity = '0';
-    const loader = document.getElementById('upload-loading');
-    loader.style.opacity = '1';
-    loader.style.pointerEvents = 'auto';
-    loader.style.transform = 'scale(1)';
+    let currentTab = 'rib';
+    const periodId = "{{ period.id }}";
 
-    const emptyState = document.getElementById('empty-state');
-    if(emptyState) emptyState.remove();
+    function switchTab(tabName) {
+        currentTab = tabName;
+        const btnRib = document.getElementById('tab-btn-rib');
+        const btnCin = document.getElementById('tab-btn-cin');
+        const activeClass = "border-indigo-500 text-indigo-600 font-bold";
+        const inactiveClass = "border-transparent text-slate-500 font-medium hover:text-slate-700 hover:border-slate-300";
 
-    const progressBar = document.getElementById('progress-bar-fill');
-    const counterText = document.getElementById('file-counter-text');
-    const filenameText = document.getElementById('current-filename');
-
-    // 2. Process One by One
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        
-        // Update UI Stats
-        counterText.innerText = `Fichier ${i + 1} sur ${files.length}`;
-        filenameText.innerText = file.name;
-        // Set progress based on START of processing
-        const percentStart = (i / files.length) * 100;
-        progressBar.style.width = `${percentStart}%`;
-
-        // Prepare FormData
-        const formData = new FormData();
-        formData.append('files', file); 
-
-        try {
-            // Send Request via Fetch
-            const response = await fetch(url, {
-                method: 'POST',
-                body: formData
-            });
-            
-            if (response.ok) {
-                const html = await response.text();
-                
-                // Create a temp container to parse the HTML
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html;
-
-                // A. Extract and Append Rows
-                const rows = tempDiv.querySelectorAll('tr');
-                const tbody = document.getElementById('table-body');
-                rows.forEach(row => {
-                    tbody.prepend(row); // Add to top
-                    htmx.process(row);  // Activate HTMX buttons inside row
-                });
-
-                // B. Extract and Swap Stats (Manual OOB)
-                const statsUpdate = tempDiv.querySelector('[hx-swap-oob]');
-                if (statsUpdate) {
-                    const targetId = statsUpdate.getAttribute('id');
-                    const targetEl = document.getElementById(targetId);
-                    if (targetEl) {
-                        targetEl.outerHTML = statsUpdate.outerHTML;
-                    }
-                }
-            }
-        } catch (error) {
-            console.error("Upload failed for", file.name, error);
+        if(tabName === 'rib') {
+            btnRib.className = btnRib.className.replace(inactiveClass, "") + activeClass;
+            btnCin.className = activeClass.split(" ").reduce((acc, c) => acc.replace(c, ""), btnCin.className) + inactiveClass;
+            document.getElementById('rib-view').classList.remove('hidden');
+            document.getElementById('cin-view').classList.add('hidden');
+            updateUploadUI("Importer des RIBs", "Glissez vos relevés bancaires.");
+        } else {
+            btnCin.className = btnCin.className.replace(inactiveClass, "") + activeClass;
+            btnRib.className = activeClass.split(" ").reduce((acc, c) => acc.replace(c, ""), btnRib.className) + inactiveClass;
+            document.getElementById('cin-view').classList.remove('hidden');
+            document.getElementById('rib-view').classList.add('hidden');
+            updateUploadUI("Importer des CIN", "Glissez vos cartes d'identité (Recto/Verso).");
         }
-        
-        // Set progress based on END of processing
-        const percentEnd = ((i + 1) / files.length) * 100;
-        progressBar.style.width = `${percentEnd}%`;
     }
 
-    // 3. Finish: Reload to ensure everything is clean or just reset UI
-    setTimeout(() => {
-        // Optional: Reload to get perfect sort order
-        window.location.reload(); 
-    }, 500);
-}
+    function updateUploadUI(title, desc) {
+        const titleEl = document.getElementById('upload-title');
+        const descEl = document.getElementById('upload-desc');
+        if(titleEl) titleEl.innerText = title;
+        if(descEl) descEl.innerText = desc;
+    }
+
+    async function handleBatchUpload(input) {
+        const files = Array.from(input.files);
+        if (files.length === 0) return;
+        const endpoint = currentTab === 'cin' ? 'upload_cin' : 'upload';
+        const url = `/period/${periodId}/${endpoint}`;
+        
+        document.getElementById('upload-idle').style.opacity = '0';
+        const loader = document.getElementById('upload-loading');
+        loader.style.opacity = '1';
+        loader.style.pointerEvents = 'auto';
+        loader.style.transform = 'scale(1)';
+
+        const ribEmpty = document.getElementById('empty-state');
+        const cinEmpty = document.getElementById('cin-empty-state');
+        if(currentTab === 'rib' && ribEmpty) ribEmpty.remove();
+        if(currentTab === 'cin' && cinEmpty) cinEmpty.remove();
+
+        const progressBar = document.getElementById('progress-bar-fill');
+        const counterText = document.getElementById('file-counter-text');
+        const filenameText = document.getElementById('current-filename');
+
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            counterText.innerText = `Fichier ${i + 1} / ${files.length}`;
+            filenameText.innerText = file.name;
+            progressBar.style.width = `${(i / files.length) * 100}%`;
+
+            const formData = new FormData();
+            formData.append('files', file); 
+
+            try {
+                const response = await fetch(url, { method: 'POST', body: formData });
+                if (response.ok) {
+                    const html = await response.text();
+                    const tbodyId = currentTab === 'cin' ? 'cin-table-body' : 'table-body';
+                    const tbody = document.getElementById(tbodyId);
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    const rows = tempDiv.querySelectorAll('tr');
+                    rows.forEach(row => {
+                        tbody.prepend(row);
+                        htmx.process(row);
+                    });
+                    if (currentTab === 'rib') {
+                        const statsUpdate = tempDiv.querySelector('[hx-swap-oob]');
+                        if (statsUpdate) {
+                            const targetEl = document.getElementById(statsUpdate.getAttribute('id'));
+                            if (targetEl) targetEl.outerHTML = statsUpdate.outerHTML;
+                        }
+                    }
+                }
+            } catch (error) { console.error("Upload failed", error); }
+            progressBar.style.width = `${((i + 1) / files.length) * 100}%`;
+        }
+        setTimeout(() => { window.location.reload(); }, 500);
+    }
 </script>
 {% endblock %}

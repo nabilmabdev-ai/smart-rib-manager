@@ -1,51 +1,66 @@
-import uuid
-import bcrypt
 from fastapi import Request, HTTPException, Depends
-from fastapi.responses import RedirectResponse
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
+from sqlmodel import Session
+from app import crud
+from app.database import get_session
+from app.models import User
 
-# 1. Hardcoded Users
-USERS = {
-    "admin": {"password": "$2b$12$YlBuCG.NH63dfgHTCfA..Odxuq23itOhz2BveejWeqcytfzxEaXlq", "role": "admin"},
-    "operator": {"password": "$2b$12$255v2cGPU8ANph/LQtoT1O2erF.9BFqWnMCIybJVZ0iCZRw3MaS..", "role": "operator"},
-    "superadmin": {"password": "$2b$12$FbuH8qOM38RlEEsOzsGP0OBMWDPYM34TdIfQHy4RGTbSVX2Ral7vO", "role": "superadmin"}
-}
+# THIS SHOULD BE IN AN ENVIRONMENT VARIABLE!
+SECRET_KEY = "your-super-secret-key-that-is-long-and-random"
+serializer = URLSafeTimedSerializer(SECRET_KEY)
 
-# 2. In-Memory Session Store (resets when server restarts)
-# Format: { "random-session-token": "username" }
-SESSIONS = {}
-
-def get_current_user(request: Request):
-    """
-    Check if the user has a valid session cookie.
-    """
+def get_current_username(request: Request) -> str | None:
     token = request.cookies.get("session_token")
+    if not token:
+        return None
+
+    try:
+        return serializer.loads(token, max_age=3600 * 12)  # 12 hours
+    except (SignatureExpired, BadTimeSignature):
+        return None
+
+async def get_current_user(
+    request: Request,
+    db: Session = Depends(get_session)
+) -> User | None:
+    username = get_current_username(request)
+    if not username:
+        return None
     
-    if not token or token not in SESSIONS:
-        # If API call (HTMX), return 401, else redirect to login
-        if "hx-request" in request.headers:
-            raise HTTPException(status_code=401, detail="Unauthorized")
-        return None # Signal to route that user is not logged in
+    user = crud.get_user_by_username(db, username=username)
+    if user:
+        return user
 
-    username = SESSIONS[token]
-    return {"username": username, "role": USERS[username]["role"]}
+    return None
 
-# Dependency to PROTECT routes (Redirects to /login if not logged in)
-def require_user(request: Request):
-    user = get_current_user(request)
+def require_user(request: Request, user: User = Depends(get_current_user)):
     if not user:
+        if "hx-request" in request.headers:
+            raise HTTPException(status_code=401, detail="Not authenticated")
         raise HTTPException(status_code=307, headers={"Location": "/login"})
     return user
 
-# Dependency for Admin
-def require_admin(request: Request):
-    user = require_user(request)
-    if user["role"] not in ["admin", "superadmin"]:
+def require_admin(user: User = Depends(require_user)):
+    if user.role not in ["admin", "superadmin"]:
         raise HTTPException(status_code=403, detail="Access denied: Admins only")
     return user
 
-# Dependency for Operator
-def require_operator(request: Request):
-    user = require_user(request)
-    if user["role"] not in ["operator", "admin", "superadmin"]:
+def require_operator(user: User = Depends(require_user)):
+
+    if user.role not in ["operator", "admin", "superadmin"]:
+
         raise HTTPException(status_code=403, detail="Access denied")
+
+    return user
+
+
+
+# --- NEW DEPENDENCY ---
+
+def require_superadmin(user: User = Depends(require_user)):
+
+    if user.role != "superadmin":
+
+        raise HTTPException(status_code=403, detail="Access denied: Superadmin only")
+
     return user
