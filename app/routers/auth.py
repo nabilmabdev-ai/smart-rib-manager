@@ -132,3 +132,10 @@ async def delete_user(
     return templates.TemplateResponse("partials/modal_users.html", {
         "request": request, "users": all_users, "current_user": user
     })
+
+@router.get("/guide", response_class=HTMLResponse)
+async def help_guide(request: Request, user: User = Depends(require_user)):
+    return templates.TemplateResponse("guide.html", {
+        "request": request, 
+        "user": user
+    })

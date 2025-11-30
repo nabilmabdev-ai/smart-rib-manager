@@ -1,0 +1,154 @@
+<!-- app/templates/guide.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<main class="min-h-screen bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        
+        <!-- Header -->
+        <div class="bg-indigo-600 px-8 py-10 text-center">
+            <h1 class="text-3xl font-bold text-white tracking-tight">Guide d'Utilisation</h1>
+            <p class="text-indigo-100 mt-2 text-lg">Smart RIB & CIN Manager</p>
+        </div>
+
+        <!-- Content -->
+        <div class="p-8 md:p-12 space-y-8 text-slate-600 leading-relaxed">
+
+            <!-- Intro -->
+            <p class="text-lg text-slate-700">
+                Bienvenue dans <strong>Smart RIB & CIN Manager</strong>, la solution automatisée pour l'extraction, la vérification et la gestion des relevés d'identité bancaire (RIB) et des cartes d'identité nationales (CIN).
+            </p>
+
+            <hr class="border-slate-100">
+
+            <!-- 1. Roles -->
+            <section>
+                <h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
+                    <span class="bg-indigo-100 text-indigo-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span>
+                    Accès et Rôles
+                </h2>
+                <div class="bg-slate-50 rounded-xl p-6 border border-slate-100">
+                    <ul class="space-y-3">
+                        <li class="flex gap-3">
+                            <span class="font-bold text-slate-800 min-w-[100px]">Operator :</span>
+                            <span>Peut importer des fichiers, vérifier les données, corriger les erreurs et exporter les résultats.</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <span class="font-bold text-indigo-600 min-w-[100px]">Admin :</span>
+                            <span>Droits opérateur + création/suppression de dossiers, verrouillage et gestion des banques.</span>
+                        </li>
+                        <li class="flex gap-3">
+                            <span class="font-bold text-purple-600 min-w-[100px]">Superadmin :</span>
+                            <span>Tous les droits + gestion des comptes utilisateurs.</span>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 2. Dossiers -->
+            <section>
+                <h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
+                    <span class="bg-indigo-100 text-indigo-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span>
+                    Gestion des Dossiers
+                </h2>
+                <p class="mb-4">L'application organise les fichiers par "Dossiers" (ou Périodes), ex: <em>Paie Nov 2025</em>.</p>
+                
+                <h3 class="font-bold text-slate-800 mt-4 mb-2">Création & Verrouillage (Admin)</h3>
+                <ul class="list-disc list-inside space-y-1 ml-2">
+                    <li><strong>Créer :</strong> Utilisez la barre en haut de l'accueil.</li>
+                    <li><strong>Clôturer :</strong> Dans un dossier, cliquez sur le bouton gris <span class="text-xs bg-slate-200 px-1.5 rounded text-slate-600 font-bold">Clôturer</span>.</li>
+                    <li><strong>Rouvrir :</strong> Cliquez sur le bouton jaune <span class="text-xs bg-amber-100 px-1.5 rounded text-amber-700 font-bold">Réouvrir</span>.</li>
+                </ul>
+                <div class="mt-4 p-3 bg-amber-50 text-amber-800 text-sm rounded-lg border border-amber-100 flex items-start gap-2">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                    Note : Si vous ne pouvez pas modifier un fichier, vérifiez que le dossier n'est pas verrouillé.
+                </div>
+            </section>
+
+            <!-- 3. RIBs -->
+            <section>
+                <h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
+                    <span class="bg-indigo-100 text-indigo-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">3</span>
+                    Traitement des RIBs
+                </h2>
+                
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-bold text-slate-800 mb-2">Légende des Statuts</h3>
+                        <ul class="space-y-2 text-sm">
+                            <li class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> <strong>Valide :</strong> RIB de 24 chiffres & banque reconnue.</li>
+                            <li class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-red-500"></span> <strong>Erreur :</strong> Incomplet ou banque inconnue.</li>
+                            <li class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-orange-500"></span> <strong>Doublon :</strong> Existe déjà.</li>
+                            <li class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-amber-500"></span> <strong>À vérifier :</strong> Incohérence texte/image.</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 mb-2">Correction Manuelle</h3>
+                        <ol class="list-decimal list-inside space-y-1 text-sm">
+                            <li>Cliquez sur le bouton <strong>Vérifier</strong>.</li>
+                            <li>Cliquez sur le <strong>Cadenas</strong> pour déverrouiller le champ RIB.</li>
+                            <li>Corrigez les chiffres.</li>
+                            <li>Cliquez sur <strong>Valider</strong>.</li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. CINs -->
+            <section>
+                <h2 class="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-3">
+                    <span class="bg-indigo-100 text-indigo-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">4</span>
+                    Traitement des CINs
+                </h2>
+                <p>Basculez sur l'onglet <strong>Cartes d'Identité</strong> dans le dossier.</p>
+                <ul class="list-disc list-inside mt-2 space-y-1">
+                    <li>Le système vérifie la syntaxe (Lettres + Chiffres).</li>
+                    <li>Il alerte si la carte est <strong class="text-red-600">Expirée</strong>.</li>
+                    <li>Exportez les données via le bouton <strong>Excel</strong>.</li>
+                </ul>
+            </section>
+
+            <!-- 5. Troubleshooting -->
+            <section class="bg-slate-50 p-6 rounded-xl border border-slate-100">
+                <h2 class="text-lg font-bold text-slate-900 mb-4">Résolution des Problèmes</h2>
+                <div class="space-y-4">
+                    
+                    <!-- Scenario 1 -->
+                    <div class="flex gap-4">
+                        <div class="min-w-[4px] bg-red-400 rounded-full"></div>
+                        <div>
+                            <p class="font-bold text-slate-800 text-sm">"Je ne peux pas modifier un RIB (Erreur 400)"</p>
+                            <p class="text-sm text-slate-600 mt-1">
+                                Le dossier est verrouillé (mode lecture seule).<br>
+                                <span class="font-medium text-indigo-600">Solution :</span> Demandez à un Administrateur de cliquer sur le bouton <strong>"Réouvrir le dossier"</strong> en haut de la page.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Scenario 2 -->
+                    <div class="flex gap-4">
+                        <div class="min-w-[4px] bg-amber-400 rounded-full"></div>
+                        <div>
+                            <p class="font-bold text-slate-800 text-sm">"Le RIB est correct (24 chiffres) mais le statut est 'Banque Inconnue'"</p>
+                            <p class="text-sm text-slate-600 mt-1">
+                                Le RIB est bien lu, mais le code banque (les 3 premiers chiffres) n'existe pas dans votre liste.<br>
+                                <span class="font-medium text-indigo-600">Solution :</span> Allez dans <strong>Mon Profil > Gérer Banques</strong> et ajoutez ce code avec le nom de la banque correspondante. Le statut passera automatiquement à VALIDE.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </div>
+        
+        <!-- Footer -->
+        <div class="bg-slate-50 px-8 py-6 border-t border-slate-200 text-center">
+            <a href="/" class="inline-block bg-indigo-600 text-white px-6 py-2 rounded-full font-bold text-sm hover:bg-indigo-700 transition-colors">
+                Retour à l'accueil
+            </a>
+        </div>
+
+    </div>
+</main>
+{% endblock %}

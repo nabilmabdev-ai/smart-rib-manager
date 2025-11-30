@@ -11,18 +11,15 @@ from app.services.banking import sanitize_ocr_numbers
 # Config
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "google-credentials.json"
 vision_client = vision.ImageAnnotatorClient()
-
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 executor = ThreadPoolExecutor()
 
 async def extract_text_from_image_bytes(content: bytes) -> str:
     loop = asyncio.get_running_loop()
-    # Run the blocking Vision call in a separate thread
     return await loop.run_in_executor(executor, _sync_extract, content)
 
 def _sync_extract(content: bytes) -> str:
-    """Wrapper for the blocking Google Vision call"""
     try:
         image = vision.Image(content=content)
         response = vision_client.text_detection(image=image)
@@ -33,18 +30,22 @@ def _sync_extract(content: bytes) -> str:
         print(f"Google Vision Error: {e}")
         return ""
 
-async def parse_extracted_text(raw_text: str, doc_type: str = "RIB"):
+async def parse_extracted_text(
+    raw_text: str, 
+    doc_type: str = "RIB", 
+    known_banks_names: list = [],
+    known_bank_codes: list = []
+):
     """
-    Uses Gemini to parse unstructured OCR text into structured JSON.
-    Supports doc_type: 'RIB' or 'CIN'.
+    Uses Gemini to parse unstructured OCR text.
     """
     if not raw_text:
         return {}
 
-    print(f"🧠 Sending to Gemini ({doc_type})...")
-    
-    # Using 'gemini-2.0-flash' or 'gemini-1.5-flash' is recommended for speed/cost
-    # If not available, fallback to 'gemini-pro'
+    # Context strings
+    banks_context = ", ".join(known_banks_names) if known_banks_names else "Attijariwafa, Banque Populaire, BMCE, CIH, etc."
+    codes_context = ", ".join(known_bank_codes) if known_bank_codes else "007, 190, 230, etc."
+
     model = genai.GenerativeModel('gemini-2.0-flash') 
 
     prompt = ""
@@ -52,18 +53,30 @@ async def parse_extracted_text(raw_text: str, doc_type: str = "RIB"):
     if doc_type == "RIB":
         prompt = f"""
           You are an expert Data Entry Clerk for Moroccan Banking.
-          Analyze the provided OCR text. Extract:
-          1. The Account Holder's Name.
-          2. The RIB (24 digits).
-          3. The Bank Name (Look at logos, headers, or text like 'Banque Populaire', 'CIH', 'Crédit Agricole').
           
-          Context:
-          - RIB: 24 digits. Correct common typos (O->0, B->8, S->5).
-          - Names: Handle prefixes like 'AIT', 'BEN', 'EL'.
+          TASK: Extract the 24-digit RIB Number, Bank Name, and Account Name.
           
+          CRITICAL RULES FOR RIB CONSTRUCTION:
+          1. **TARGET:** A Moroccan RIB is STRICTLY 24 digits long.
+          
+          2. **SCENARIO A (IBAN Priority):**
+             If you see an IBAN (starts with 'MA'), the RIB is digits 5 to 28 of the IBAN. 
+             Extract this sequence.
+          
+          3. **SCENARIO B (Tabular):**
+             The RIB is often split into 4 boxes: [Code Banque(3)] [Code Ville(3)] [N° Compte(16)] [Clé(2)].
+             You MUST concatenate them.
+             *Example:* "230" + "780" + "3918...1700" + "49" -> "2307803918...170049"
+             
+          4. **VALIDATION:**
+             - The result MUST start with one of these valid Bank Codes: {codes_context}.
+             - Remove spaces, dashes, and non-digit characters.
+
+          5. **BANK NAME:** Map the logo/text to: {banks_context}.
+
           Output strictly valid JSON:
           {{
-            "rib": "string_or_null",
+            "rib": "string_24_digits_only",
             "firstName": "string_or_null",
             "lastName": "string_or_null",
             "bankName": "string_or_null" 
@@ -76,19 +89,9 @@ async def parse_extracted_text(raw_text: str, doc_type: str = "RIB"):
     elif doc_type == "CIN":
         prompt = f"""
           You are an expert HR Assistant in Morocco. 
-          Analyze the provided OCR text from a Moroccan National ID (CIN / Carte d'Identité Nationale).
+          Analyze the provided OCR text from a Moroccan National ID (CIN).
+          Extract CIN Number, First Name, Last Name, Birth Date (DD/MM/YYYY), Validity Date (DD/MM/YYYY), Address.
           
-          Extract:
-          1. CIN Number (Numéro de CIN): Usually 1-2 letters followed by numbers (e.g., BJ42291, A40020, I123456).
-          2. First Name & Last Name: Convert to UPPERCASE.
-          3. Date of Birth (Date de Naissance): Format DD/MM/YYYY.
-          4. Validity Date (Valable jusqu'au): Format DD/MM/YYYY.
-          5. Address (Adresse): Usually found on the back of the card. If found, extract it.
-
-          Context:
-          - Dates: Ensure standard DD/MM/YYYY format (e.g., 01/01/1990).
-          - Noise: Ignore watermarks or background text.
-
           Output strictly valid JSON:
           {{
             "cin_number": "string_or_null",
@@ -107,7 +110,6 @@ async def parse_extracted_text(raw_text: str, doc_type: str = "RIB"):
         response = await model.generate_content_async(prompt)
         text_response = response.text.strip()
         
-        # Clean markdown code blocks if present
         if text_response.startswith("```json"):
             text_response = text_response[7:-3]
         elif text_response.startswith("```"):
@@ -115,16 +117,44 @@ async def parse_extracted_text(raw_text: str, doc_type: str = "RIB"):
 
         data = json.loads(text_response)
         
-        # Post-Processing based on type
         if doc_type == "RIB":
+            raw_rib = str(data.get("rib") or "")
+            clean_rib = sanitize_ocr_numbers(raw_rib)
+
+            # --- PYTHON POST-PROCESSING (Safety Net) ---
+            
+            # STRATEGY 1: IBAN EXTRACTION (Highest Priority)
+            # Looks for 'MA' followed by 2 digits, then captures the next 24 digits/spaces
+            if len(clean_rib) != 24:
+                iban_match = re.search(r'MA\s*\d{2}\s*((?:\d\s*){24})', raw_text, re.IGNORECASE)
+                if iban_match:
+                    # Extract the group and remove spaces
+                    potential_rib = re.sub(r'\D', '', iban_match.group(1))
+                    if len(potential_rib) == 24:
+                        clean_rib = potential_rib
+            
+            # STRATEGY 2: BANK CODE SEARCH (Fallback)
+            # If still not 24 digits, try finding a valid code inside the string
+            if len(clean_rib) != 24:
+                found_rib = None
+                for code in known_bank_codes:
+                    idx = clean_rib.find(code)
+                    if idx != -1:
+                        candidate = clean_rib[idx : idx + 24]
+                        if len(candidate) == 24:
+                            found_rib = candidate
+                            break
+                if found_rib:
+                    clean_rib = found_rib
+            
             return {
-                "rib": sanitize_ocr_numbers(str(data.get("rib") or "")),
+                "rib": clean_rib,
                 "firstName": (data.get("firstName") or "").upper(),
                 "lastName": (data.get("lastName") or "").upper(),
                 "bankName": (data.get("bankName") or "").strip(),
                 "raw_text": raw_text[:3000]
             }
-            
+        
         elif doc_type == "CIN":
             return {
                 "cin_number": (data.get("cin_number") or "").replace(" ", "").upper(),
@@ -135,28 +165,17 @@ async def parse_extracted_text(raw_text: str, doc_type: str = "RIB"):
                 "address": (data.get("address") or "").strip(),
                 "raw_text": raw_text[:3000]
             }
-
         return {}
-
     except Exception as e:
         print(f"Gemini Error ({doc_type}): {e}")
-        # Return empty structure with error in raw_text for debugging
         if doc_type == "RIB":
             return {"rib": "", "firstName": "", "lastName": "", "bankName": "", "raw_text": f"Error: {str(e)}"}
         else:
             return {"cin_number": "", "first_name": "", "last_name": "", "raw_text": f"Error: {str(e)}"}
 
+# Helper function (Restored)
 def validate_extraction_in_source(extracted_value: str, raw_text: str) -> bool:
-    """
-    Generic validation: Ensure the critical digits/chars actually exist in the source 
-    to prevent AI hallucination.
-    """
-    if not extracted_value:
-        return False
-        
-    # Remove all non-alphanumeric chars for comparison
+    if not extracted_value: return False
     clean_extracted = re.sub(r'[^a-zA-Z0-9]', '', extracted_value).upper()
     clean_raw = re.sub(r'[^a-zA-Z0-9]', '', raw_text).upper()
-    
-    # Strict check: The sequence must exist
     return clean_extracted in clean_raw

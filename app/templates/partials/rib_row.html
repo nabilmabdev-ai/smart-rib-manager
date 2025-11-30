@@ -9,8 +9,21 @@
         <div class="flex flex-col gap-1 items-start">
             {% if rib.status == 'SUCCESS' %}
                 <span class="bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border border-emerald-200">Valide</span>
+            
             {% elif rib.status == 'ERROR' %}
-                <span class="bg-red-50 text-red-700 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border border-red-200">Erreur RIB</span>
+                <!-- SMART ERROR DETECTION -->
+                {% if rib.rib and rib.rib|length == 24 %}
+                    <span class="bg-red-50 text-red-700 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border border-red-200 cursor-help" 
+                          title="Le RIB a la bonne longueur (24) mais le code banque (3 premiers chiffres) n'est pas dans la base de données.">
+                        Banque Inconnue
+                    </span>
+                    <span class="text-[9px] text-red-500 font-medium">Ajouter le code {{ rib.rib[:3] }}</span>
+                {% else %}
+                    <span class="bg-red-50 text-red-700 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border border-red-200">
+                        Format Invalide
+                    </span>
+                {% endif %}
+
             {% elif rib.status == 'DUPLICATE' %}
                 <span class="bg-orange-50 text-orange-700 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase border border-orange-200">Doublon</span>
             {% elif rib.status == 'SUSPICIOUS' %}
@@ -35,15 +48,22 @@
 
     <!-- BANK NAME -->
     <td class="px-6 py-4 align-middle">
-        {% set bank_name = get_bank_name(rib.rib, rib.ai_bank_name) %}
-        {% if bank_name %}
+        {% set bank_code = rib.rib[:3] if rib.rib and rib.rib|length >= 3 else '' %}
+        
+        {% if bank_code and banks_dict and banks_dict[bank_code] %}
+            <!-- Cas 1: Banque trouvée dans la DB par son code -->
             <div class="flex items-center gap-2">
                 <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded border border-indigo-100">
-                    {{ bank_name }}
+                    {{ banks_dict[bank_code].name }}
                 </span>
-                {% if "Détecté par IA" in bank_name %}
-                <span class="text-[10px] text-amber-600 bg-amber-50 px-1 rounded border border-amber-200" title="Nom lu visuellement, code banque inconnu">AI</span>
-                {% endif %}
+            </div>
+        {% elif rib.ai_bank_name %}
+            <!-- Cas 2: Banque détectée par l'IA (nom texte) mais code inconnu -->
+             <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-600 bg-slate-50 px-2 py-1 rounded border border-slate-200">
+                    {{ rib.ai_bank_name }}
+                </span>
+                <span class="text-[10px] text-amber-600 bg-amber-50 px-1 rounded border border-amber-200" title="Nom lu par IA, code banque inconnu">IA</span>
             </div>
         {% else %}
             <span class="text-slate-300 text-xs">—</span>
@@ -68,7 +88,29 @@
 
     <!-- ACTIONS -->
     <td class="px-6 py-4 align-middle text-right">
-        <div class="flex items-center justify-end gap-3">
+        <div class="flex items-center justify-end gap-2">
+            
+            <!-- NEW: RETRY AI BUTTON -->
+            {% if rib.status != 'SUCCESS' %}
+            <button hx-post="/rib/{{ rib.id }}/retry_ai" 
+                    hx-target="#row-{{ rib.id }}" 
+                    hx-swap="outerHTML"
+                    class="group relative inline-flex items-center justify-center w-8 h-8 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-all shadow-sm border border-indigo-100"
+                    title="Relancer l'analyse IA">
+                
+                <!-- Normal Icon (Refresh) -->
+                <svg class="w-4 h-4 group-[.htmx-request]:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                
+                <!-- Loading Icon (Spinner) - Shows during HTMX request -->
+                <svg class="w-4 h-4 animate-spin hidden group-[.htmx-request]:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+            </button>
+            {% endif %}
+
+            <!-- EXISTING: VERIFIER BUTTON -->
             <button hx-get="/rib/{{ rib.id }}/modal" 
                     hx-target="#modal-container" 
                     hx-swap="innerHTML"
@@ -76,7 +118,7 @@
                 Vérifier
             </button>
             
-            <!-- FIXED: Changed target to closest tr -->
+            <!-- EXISTING: DELETE BUTTON -->
             <button hx-delete="/rib/{{ rib.id }}"
                     hx-target="closest tr"
                     hx-swap="outerHTML"
